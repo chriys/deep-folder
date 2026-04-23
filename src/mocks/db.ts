@@ -1,19 +1,18 @@
-import type { Folder, Conversation, IngestState } from "../types";
+import type { Folder, Conversation, IngestState, IngestFile } from "../types";
 
-function fakeId() {
-  return Math.random().toString(36).slice(2, 10);
+export { fakeId } from "./helpers";
+
+export interface MockFile extends IngestFile {
+  /* same shape */
 }
 
-export interface MockFile {
-  id: string;
-  name: string;
-  mime_type: string;
-  drive_file_id: string;
+export interface MockSkippedFile extends MockFile {
+  skip_reason: string;
 }
 
 export interface MockFolder extends Folder {
   files: MockFile[];
-  skipped_files: (MockFile & { skip_reason: string })[];
+  skipped_files: MockSkippedFile[];
 }
 
 export interface MockConversation extends Conversation {
@@ -34,7 +33,7 @@ const seedFiles: MockFile[] = [
   { id: "f4", name: "budget.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", drive_file_id: "drive_f4" },
 ];
 
-const seedSkipped: (MockFile & { skip_reason: string })[] = [
+const seedSkipped: MockSkippedFile[] = [
   { id: "s1", name: "image.png", mime_type: "image/png", drive_file_id: "drive_s1", skip_reason: "unsupported file type" },
   { id: "s2", name: "video.mp4", mime_type: "video/mp4", drive_file_id: "drive_s2", skip_reason: "file too large" },
 ];
@@ -47,8 +46,22 @@ const db: MockDB = {
       drive_url: "https://drive.google.com/drive/folders/abc123",
       ingest_state: "done",
       created_at: "2026-04-20T10:00:00Z",
+      file_count: 4,
+      skipped_file_count: 2,
+      error_message: null,
       files: seedFiles,
       skipped_files: seedSkipped,
+    },
+    {
+      id: "folder_failed",
+      drive_url: "https://drive.google.com/drive/folders/failed123",
+      ingest_state: "failed",
+      created_at: "2026-04-21T10:00:00Z",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: "Indexing failed due to a transient error",
+      files: [],
+      skipped_files: [],
     },
   ],
   conversations: [
@@ -69,8 +82,22 @@ export function resetDb(): void {
       drive_url: "https://drive.google.com/drive/folders/abc123",
       ingest_state: "done",
       created_at: "2026-04-20T10:00:00Z",
+      file_count: 4,
+      skipped_file_count: 2,
+      error_message: null,
       files: seedFiles,
       skipped_files: seedSkipped,
+    },
+    {
+      id: "folder_failed",
+      drive_url: "https://drive.google.com/drive/folders/failed123",
+      ingest_state: "failed",
+      created_at: "2026-04-21T10:00:00Z",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: "Indexing failed due to a transient error",
+      files: [],
+      skipped_files: [],
     },
   ];
   db.conversations = [
@@ -94,10 +121,7 @@ export function resetFolderCallCounts(): void {
 }
 
 export function nextIngestState(current: IngestState): IngestState {
-  if (current === "done") return "pending";
   if (current === "pending") return "running";
   if (current === "running") return "done";
   return current;
 }
-
-export { fakeId };

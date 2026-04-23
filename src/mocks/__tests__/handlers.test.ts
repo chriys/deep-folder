@@ -63,7 +63,7 @@ describe("folder endpoints", () => {
     const res = await fetch("/folders");
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
-    expect(body).toHaveLength(1);
+    expect(body).toHaveLength(2);
     expect(body[0].id).toBe("folder_1");
     expect(body[0].drive_url).toBe(
       "https://drive.google.com/drive/folders/abc123",
@@ -83,6 +83,9 @@ describe("folder endpoints", () => {
     );
     expect(body.ingest_state).toBe("pending");
     expect(body.id).toBeTruthy();
+    expect(body.file_count).toBe(0);
+    expect(body.skipped_file_count).toBe(0);
+    expect(body.error_message).toBeNull();
   });
 
   it("POST /folders rejects missing drive_url", async () => {
@@ -96,7 +99,7 @@ describe("folder endpoints", () => {
     expect(body.error).toBe("drive_url is required");
   });
 
-  it("POST /folders rejects Shared Drive URLs", async () => {
+  it("POST /folders accepts regular Drive folder URLs", async () => {
     const res = await fetch("/folders", {
       method: "POST",
       body: JSON.stringify({
@@ -104,17 +107,25 @@ describe("folder endpoints", () => {
       }),
       headers: { "Content-Type": "application/json" },
     });
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe("Shared Drive URLs are not supported");
+    expect(res.status).toBe(201);
   });
 
-  it("GET /folders/:id returns single folder", async () => {
+  it("GET /folders/:id returns single folder with detail fields", async () => {
     const res = await fetch("/folders/folder_1");
     const body = await res.json();
     expect(body.id).toBe("folder_1");
     expect(body.files).toBeDefined();
     expect(body.skipped_files).toBeDefined();
+    expect(body.file_count).toBe(4);
+    expect(body.skipped_file_count).toBe(2);
+  });
+
+  it("GET /folders/:id returns failed folder with error_message", async () => {
+    const res = await fetch("/folders/folder_failed");
+    const body = await res.json();
+    expect(body.id).toBe("folder_failed");
+    expect(body.ingest_state).toBe("failed");
+    expect(body.error_message).toBe("Indexing failed due to a transient error");
   });
 
   it("GET /folders/:id 404s for unknown folder", async () => {
@@ -126,7 +137,7 @@ describe("folder endpoints", () => {
     const res = await fetch("/folders/folder_1", { method: "DELETE" });
     expect(res.status).toBe(200);
     const list = await fetch("/folders").then((r) => r.json());
-    expect(list).toHaveLength(0);
+    expect(list).toHaveLength(1);
   });
 
   it("DELETE /folders/:id 404s for unknown folder", async () => {
@@ -137,22 +148,6 @@ describe("folder endpoints", () => {
 
 describe("folder ingest state cycling", () => {
   it("cycles pending -> running -> done on repeated calls", async () => {
-    const id = "folder_1";
-
-    const call1 = await fetch(`/folders/${id}`).then((r) => r.json());
-    expect(call1.ingest_state).toBe("done");
-
-    const call2 = await fetch(`/folders/${id}`).then((r) => r.json());
-    expect(call2.ingest_state).toBe("pending");
-
-    const call3 = await fetch(`/folders/${id}`).then((r) => r.json());
-    expect(call3.ingest_state).toBe("running");
-
-    const call4 = await fetch(`/folders/${id}`).then((r) => r.json());
-    expect(call4.ingest_state).toBe("done");
-  });
-
-  it("newly created folder starts with pending then cycles", async () => {
     const create = await fetch("/folders", {
       method: "POST",
       body: JSON.stringify({
@@ -171,6 +166,25 @@ describe("folder ingest state cycling", () => {
 
     const call3 = await fetch(`/folders/${create.id}`).then((r) => r.json());
     expect(call3.ingest_state).toBe("done");
+
+    const call4 = await fetch(`/folders/${create.id}`).then((r) => r.json());
+    expect(call4.ingest_state).toBe("done");
+  });
+
+  it("does not cycle done folder on repeated calls", async () => {
+    const call1 = await fetch("/folders/folder_1").then((r) => r.json());
+    expect(call1.ingest_state).toBe("done");
+
+    const call2 = await fetch("/folders/folder_1").then((r) => r.json());
+    expect(call2.ingest_state).toBe("done");
+  });
+
+  it("does not cycle failed folder on repeated calls", async () => {
+    const call1 = await fetch("/folders/folder_failed").then((r) => r.json());
+    expect(call1.ingest_state).toBe("failed");
+
+    const call2 = await fetch("/folders/folder_failed").then((r) => r.json());
+    expect(call2.ingest_state).toBe("failed");
   });
 });
 
