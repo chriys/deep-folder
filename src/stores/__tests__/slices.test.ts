@@ -1,19 +1,13 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach } from "vitest";
-import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
-import { handlers } from "../../mocks/handlers";
-import { resetDb, resetFolderCallCounts } from "../../mocks/db";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useStore } from "../index";
 
-const server = setupServer(...handlers);
-
-beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
-afterEach(() => {
-  server.resetHandlers();
-  resetDb();
-  resetFolderCallCounts();
-});
-afterAll(() => server.close());
+function mockOkResponse<T>(data: T): Response {
+  return {
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve(data),
+  } as unknown as Response;
+}
 
 const initialState = useStore.getState();
 
@@ -49,6 +43,7 @@ describe("auth slice", () => {
 
 describe("folder slice", () => {
   beforeEach(() => useStore.setState(initialState));
+  afterEach(() => { vi.restoreAllMocks(); });
 
   it("starts with empty folders array", () => {
     expect(useStore.getState().folders).toEqual([]);
@@ -81,6 +76,21 @@ describe("folder slice", () => {
   });
 
   it("createFolder posts URL and adds folder to list", async () => {
+    const mockFolder = {
+      id: "folder_test_1",
+      drive_url: "https://drive.google.com/drive/folders/xyz",
+      ingest_state: "pending" as const,
+      created_at: "2026-04-23T00:00:00Z",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: () => Promise.resolve(mockFolder),
+    } as unknown as Response);
+
     const folder = await useStore.getState().createFolder("https://drive.google.com/drive/folders/xyz");
     expect(folder.ingest_state).toBe("pending");
     expect(folder.drive_url).toBe("https://drive.google.com/drive/folders/xyz");
@@ -90,6 +100,21 @@ describe("folder slice", () => {
   });
 
   it("removeFolder deletes folder from store and API", async () => {
+    const mockFolder = {
+      id: "folder_test_1",
+      drive_url: "https://drive.google.com/drive/folders/xyz",
+      ingest_state: "pending" as const,
+      created_at: "2026-04-23T00:00:00Z",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(mockFolder),
+    } as unknown as Response);
+
     const folder = await useStore.getState().createFolder("https://drive.google.com/drive/folders/xyz");
     expect(useStore.getState().folders).toHaveLength(1);
 
@@ -114,6 +139,12 @@ describe("folder slice", () => {
   });
 
   it("fetchFolders loads folders via API", async () => {
+    const mockFolders = [
+      { id: "folder_1", drive_url: "https://drive.google.com/drive/folders/abc123", ingest_state: "done" as const, created_at: "2026-04-20T10:00:00Z", file_count: 4, skipped_file_count: 2, error_message: null },
+      { id: "folder_failed", drive_url: "https://drive.google.com/drive/folders/failed123", ingest_state: "failed" as const, created_at: "2026-04-21T10:00:00Z", file_count: 0, skipped_file_count: 0, error_message: "Indexing failed due to a transient error" },
+    ];
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockOkResponse(mockFolders));
+
     const { fetchFolders } = useStore.getState();
     const promise = fetchFolders();
     expect(useStore.getState().foldersLoading).toBe(true);
@@ -125,7 +156,7 @@ describe("folder slice", () => {
   });
 
   it("fetchFolders sets error on failure", async () => {
-    server.use(http.get("/folders", () => HttpResponse.error()));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
     const { fetchFolders } = useStore.getState();
     await fetchFolders();
     expect(useStore.getState().foldersLoading).toBe(false);
@@ -133,6 +164,9 @@ describe("folder slice", () => {
   });
 
   it("fetchFolderDetail loads detail via API", async () => {
+    const mockDetail = { id: "folder_1", drive_url: "https://drive.google.com/drive/folders/abc123", ingest_state: "done" as const, created_at: "2026-04-20T10:00:00Z", file_count: 4, skipped_file_count: 2, error_message: null, files: [], skipped_files: [] };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockOkResponse(mockDetail));
+
     const { fetchFolderDetail } = useStore.getState();
     const promise = fetchFolderDetail("folder_1");
     expect(useStore.getState().folderDetailLoading).toBe(true);
@@ -144,7 +178,7 @@ describe("folder slice", () => {
   });
 
   it("fetchFolderDetail sets error on failure", async () => {
-    server.use(http.get("/folders/folder_1", () => HttpResponse.error()));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
     const { fetchFolderDetail } = useStore.getState();
     await fetchFolderDetail("folder_1");
     expect(useStore.getState().folderDetailLoading).toBe(false);
@@ -273,6 +307,11 @@ describe("chat slice", () => {
   });
 
   it("fetchConversations loads conversations via API", async () => {
+    const mockConvs = [
+      { id: "conv_1", folder_id: "folder_1", title: "Q4 Report Questions", created_at: "2026-04-21T14:00:00Z" },
+    ];
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockOkResponse(mockConvs));
+
     const { fetchConversations } = useStore.getState();
     const promise = fetchConversations();
     expect(useStore.getState().conversationsLoading).toBe(true);
@@ -284,7 +323,7 @@ describe("chat slice", () => {
   });
 
   it("fetchConversations sets error on failure", async () => {
-    server.use(http.get("/conversations", () => HttpResponse.error()));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
     const { fetchConversations } = useStore.getState();
     await fetchConversations();
     expect(useStore.getState().conversationsLoading).toBe(false);
@@ -292,6 +331,9 @@ describe("chat slice", () => {
   });
 
   it("fetchConversation loads single conversation via API", async () => {
+    const mockConv = { id: "conv_1", folder_id: "folder_1", title: "Q4 Report Questions", created_at: "2026-04-21T14:00:00Z" };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(mockOkResponse(mockConv));
+
     const { fetchConversation } = useStore.getState();
     const promise = fetchConversation("conv_1");
     expect(useStore.getState().activeConversationLoading).toBe(true);
@@ -303,7 +345,7 @@ describe("chat slice", () => {
   });
 
   it("fetchConversation sets error on failure", async () => {
-    server.use(http.get("/conversations/conv_1", () => HttpResponse.error()));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
     const { fetchConversation } = useStore.getState();
     await fetchConversation("conv_1");
     expect(useStore.getState().activeConversationLoading).toBe(false);

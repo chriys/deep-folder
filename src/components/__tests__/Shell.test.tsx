@@ -1,22 +1,53 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { setupServer } from "msw/node";
-import { handlers } from "../../mocks/handlers";
-import { resetDb, getDb } from "../../mocks/db";
 import { useStore } from "../../stores";
 import { Shell } from "../Shell";
 
-const server = setupServer(...handlers);
+const defaultFolders = [
+  {
+    id: "folder_1",
+    drive_url: "https://drive.google.com/drive/folders/abc123",
+    ingest_state: "done" as const,
+    created_at: "2026-04-20T10:00:00Z",
+    file_count: 4,
+    skipped_file_count: 2,
+    error_message: null,
+  },
+  {
+    id: "folder_failed",
+    drive_url: "https://drive.google.com/drive/folders/failed123",
+    ingest_state: "failed" as const,
+    created_at: "2026-04-21T10:00:00Z",
+    file_count: 0,
+    skipped_file_count: 0,
+    error_message: "Indexing failed due to a transient error",
+  },
+];
 
-beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
-afterEach(() => {
-  cleanup();
-  server.resetHandlers();
-  resetDb();
-});
-afterAll(() => server.close());
+const defaultConversations = [
+  { id: "conv_1", folder_id: "folder_1", title: "Q4 Report Questions", created_at: "2026-04-21T14:00:00Z", messageCount: 3 },
+];
+
+function mockFetchResponse(data: unknown) {
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve(data),
+  } as unknown as Response);
+}
+
+function defaultMockFetch(url: RequestInfo | URL): Promise<Response> {
+  const urlStr = url.toString();
+  if (urlStr.includes("/folders")) {
+    return mockFetchResponse(defaultFolders);
+  }
+  if (urlStr.includes("/conversations")) {
+    return mockFetchResponse(defaultConversations);
+  }
+  return mockFetchResponse({});
+}
 
 const initialState = useStore.getState();
 
@@ -36,9 +67,17 @@ function createRouter(initialRoute = "/folders") {
 }
 
 describe("Shell sidebar", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     useStore.setState(initialState);
     localStorage.clear();
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(defaultMockFetch);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
   });
 
   it("shows user email and green dot when authenticated", () => {
@@ -77,16 +116,28 @@ describe("Shell sidebar", () => {
   });
 
   it("switching folder updates active state", async () => {
-    getDb().folders.push({
-      id: "folder_2",
-      drive_url: "https://drive.google.com/drive/u/0/my-drive",
-      ingest_state: "done",
-      created_at: "2026-04-22T10:00:00Z",
-      file_count: 0,
-      skipped_file_count: 0,
-      error_message: null,
-      files: [],
-      skipped_files: [],
+    const threeFolders = [
+      ...defaultFolders,
+      {
+        id: "folder_2",
+        drive_url: "https://drive.google.com/drive/u/0/my-drive",
+        ingest_state: "done" as const,
+        created_at: "2026-04-22T10:00:00Z",
+        file_count: 0,
+        skipped_file_count: 0,
+        error_message: null,
+      },
+    ];
+
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
+      const urlStr = url.toString();
+      if (urlStr.includes("/folders")) {
+        return mockFetchResponse(threeFolders);
+      }
+      if (urlStr.includes("/conversations")) {
+        return mockFetchResponse([]);
+      }
+      return mockFetchResponse({});
     });
 
     render(<RouterProvider router={createRouter()} />);
@@ -103,7 +154,16 @@ describe("Shell sidebar", () => {
   });
 
   it("shows empty state when no conversations", async () => {
-    getDb().conversations = [];
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
+      const urlStr = url.toString();
+      if (urlStr.includes("/folders")) {
+        return mockFetchResponse(defaultFolders);
+      }
+      if (urlStr.includes("/conversations")) {
+        return mockFetchResponse([]);
+      }
+      return mockFetchResponse({});
+    });
 
     render(<RouterProvider router={createRouter()} />);
     await screen.findByTestId("no-conversations");
@@ -111,7 +171,12 @@ describe("Shell sidebar", () => {
   });
 
   it("new conversation button disabled when no folders exist", async () => {
-    getDb().folders = [];
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
+      if (url.toString().includes("/folders")) {
+        return mockFetchResponse([]);
+      }
+      return mockFetchResponse({});
+    });
 
     render(<RouterProvider router={createRouter()} />);
     await screen.findByTestId("new-conversation");

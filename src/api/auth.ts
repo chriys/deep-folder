@@ -1,3 +1,5 @@
+import { apiUrl } from "./client";
+
 export interface AuthStatusResponse {
   connected: boolean;
   email: string | null;
@@ -13,19 +15,20 @@ export interface AuthErrorResponse {
 }
 
 export async function getAuthStatus(): Promise<AuthStatusResponse> {
-  const res = await fetch("/auth/status");
+  const res = await fetch(apiUrl("/auth/status"), { credentials: "include" });
   return res.json();
 }
 
 export function startGoogleAuth(): void {
-  window.location.href = "/auth/google/start";
+  window.location.href = apiUrl("/auth/google/start");
 }
 
 export async function handleAuthCallback(
   code: string,
 ): Promise<AuthCallbackResponse | AuthErrorResponse> {
   const res = await fetch(
-    `/auth/google/callback?code=${encodeURIComponent(code)}`,
+    apiUrl(`/auth/google/callback?code=${encodeURIComponent(code)}`),
+    { credentials: "include" },
   );
   const body = await res.json();
   if (!res.ok) {
@@ -35,5 +38,8 @@ export async function handleAuthCallback(
 }
 
 export async function disconnect(): Promise<void> {
-  await fetch("/auth/disconnect", { method: "POST" });
+  await fetch(apiUrl("/auth/disconnect"), {
+    method: "POST",
+    credentials: "include",
+  });
 }

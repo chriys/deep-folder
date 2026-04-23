@@ -50,7 +50,7 @@ export function Chat() {
       let doneOrError = false;
 
       try {
-        const response = await sendMessageRequest(convId);
+        const response = await sendMessageRequest(convId, content);
         const result = await readSSEStream(response, {
           text_delta: ({ content }) =>
             appendStreamContent(assistantMsg.id, content),

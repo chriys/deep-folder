@@ -1,5 +1,6 @@
 import { StateCreator } from "zustand";
 import type { Message, Conversation, Citation } from "../types";
+import { apiUrl } from "../api/client";
 
 export type StreamStatus = "idle" | "streaming" | "done" | "error";
 
@@ -81,7 +82,7 @@ export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
   fetchConversations: async () => {
     set({ conversationsLoading: true, conversationsError: null });
     try {
-      const res = await fetch("/conversations");
+      const res = await fetch(apiUrl("/conversations"), { credentials: "include" });
       if (!res.ok) throw new Error(`Failed to load conversations (${res.status})`);
       const data = (await res.json()) as Conversation[];
       set({ conversations: data, conversationsLoading: false });
@@ -92,7 +93,7 @@ export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
   fetchConversation: async (id: string) => {
     set({ activeConversationLoading: true, activeConversationError: null });
     try {
-      const res = await fetch(`/conversations/${id}`);
+      const res = await fetch(apiUrl(`/conversations/${id}`), { credentials: "include" });
       if (!res.ok) throw new Error(`Failed to load conversation (${res.status})`);
       const data = (await res.json()) as Conversation;
       set({ activeConversation: data, activeConversationLoading: false });

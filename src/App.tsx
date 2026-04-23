@@ -8,6 +8,7 @@ import { Folders } from "./routes/Folders";
 import { FolderDetail } from "./routes/FolderDetail";
 import { Chat } from "./routes/Chat";
 import { useStore } from "./stores";
+import { apiUrl } from "./api/client";
 
 const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
@@ -32,7 +33,7 @@ function AppInner() {
   const setEmail = useStore((s) => s.setEmail);
 
   useEffect(() => {
-    fetch("/auth/status")
+    fetch(apiUrl("/auth/status"), { credentials: "include" })
       .then((res) => res.json())
       .then((data: { connected: boolean; email: string | null }) => {
         if (data.connected) {

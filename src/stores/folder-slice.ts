@@ -1,5 +1,6 @@
 import { StateCreator } from "zustand";
 import type { Folder, FolderDetail } from "../types";
+import { apiUrl } from "../api/client";
 import * as api from "../api/folders";
 
 export interface FolderSlice {
@@ -41,7 +42,7 @@ export const createFolderSlice: StateCreator<FolderSlice> = (set) => ({
   fetchFolders: async () => {
     set({ foldersLoading: true, foldersError: null });
     try {
-      const res = await fetch("/folders");
+      const res = await fetch(apiUrl("/folders"), { credentials: "include" });
       if (!res.ok) throw new Error(`Failed to load folders (${res.status})`);
       const data = (await res.json()) as Folder[];
       set({ folders: data, foldersLoading: false });
@@ -53,7 +54,7 @@ export const createFolderSlice: StateCreator<FolderSlice> = (set) => ({
   fetchFolderDetail: async (id: string) => {
     set({ folderDetailLoading: true, folderDetailError: null });
     try {
-      const res = await fetch(`/folders/${id}`);
+      const res = await fetch(apiUrl(`/folders/${id}`), { credentials: "include" });
       if (!res.ok) throw new Error(`Failed to load folder (${res.status})`);
       const data = (await res.json()) as Folder;
       set({ activeFolderDetail: data, folderDetailLoading: false });

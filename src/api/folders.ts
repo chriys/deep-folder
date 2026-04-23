@@ -1,10 +1,12 @@
+import { apiUrl } from "./client";
 import type { Folder, FolderDetail } from "../types";
 
 export async function createFolder(driveUrl: string): Promise<Folder> {
-  const res = await fetch("/folders", {
+  const res = await fetch(apiUrl("/folders"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ drive_url: driveUrl }),
+    credentials: "include",
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error ?? "Failed to create folder");
@@ -12,20 +14,23 @@ export async function createFolder(driveUrl: string): Promise<Folder> {
 }
 
 export async function fetchFolders(): Promise<Folder[]> {
-  const res = await fetch("/folders");
+  const res = await fetch(apiUrl("/folders"), { credentials: "include" });
   const body = await res.json();
   if (!res.ok) throw new Error("Failed to fetch folders");
   return body as Folder[];
 }
 
 export async function fetchFolder(id: string): Promise<FolderDetail> {
-  const res = await fetch(`/folders/${id}`);
+  const res = await fetch(apiUrl(`/folders/${id}`), { credentials: "include" });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error ?? "Folder not found");
   return body as FolderDetail;
 }
 
 export async function deleteFolder(id: string): Promise<void> {
-  const res = await fetch(`/folders/${id}`, { method: "DELETE" });
+  const res = await fetch(apiUrl(`/folders/${id}`), {
+    method: "DELETE",
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("Failed to delete folder");
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router";
 import { useStore } from "../stores";
+import { apiUrl } from "../api/client";
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -15,7 +16,7 @@ export function AuthCallback() {
       return;
     }
 
-    fetch(`/auth/google/callback?code=${encodeURIComponent(code)}`)
+    fetch(apiUrl(`/auth/google/callback?code=${encodeURIComponent(code)}`), { credentials: "include" })
       .then(async (res) => {
         const body = await res.json();
         if (res.status === 403) {
