@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk ls *)",
+      "Bash(gh repo *)",
+      "Bash(rtk gh *)",
+      "Bash(gh issue *)",
+      "Bash(gh label *)"
+    ]
+  }
+}
