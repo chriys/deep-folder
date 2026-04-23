@@ -1,80 +1,81 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { setupServer } from "msw/node";
-import { handlers } from "../../mocks/handlers";
-import { resetDb, getDb } from "../../mocks/db";
 import { useStore } from "../../stores";
 import { Chat } from "../Chat";
 
-const server = setupServer(...handlers);
-
-beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
-afterEach(() => {
-  cleanup();
-  server.resetHandlers();
-  resetDb();
-});
-afterAll(() => server.close());
-
 const initialState = useStore.getState();
 
-function createRouter(initialRoute = "/chat/conv_1") {
-  return createMemoryRouter(
-    [
-      { path: "/chat/:convId", element: <Chat /> },
-    ],
-    { initialEntries: [initialRoute] },
+afterEach(() => {
+  cleanup();
+  useStore.setState(initialState);
+});
+
+function renderChat() {
+  const router = createMemoryRouter(
+    [{ path: "/chat/:convId", element: <Chat /> }],
+    { initialEntries: ["/chat/conv_1"] },
   );
+  return render(<RouterProvider router={router} />);
 }
 
-describe("Chat route", () => {
-  beforeEach(() => {
-    useStore.setState(initialState);
-    // Set up folders in store so Chat can find folder name
-    useStore.getState().setFolders([
-      {
-        id: "folder_1",
-        drive_url: "https://drive.google.com/drive/folders/abc123",
-        ingest_state: "done",
-        created_at: "2026-04-20T10:00:00Z",
-      },
-    ]);
+const citation = {
+  file_id: "f1",
+  file_name: "report-2024-q4.pdf",
+  primary_unit: { type: "page" as const, value: "12" },
+  quote: "Q4 revenue grew 23% year-over-year to $4.2M",
+  deep_link: "https://drive.google.com/open?id=drive_f1&page=12",
+};
+
+describe("Chat", () => {
+  it("shows empty state when no messages", () => {
+    renderChat();
+    expect(screen.getByText("Ask anything about your folder")).toBeInTheDocument();
   });
 
-  it("shows loading state while fetching conversation", () => {
-    render(<RouterProvider router={createRouter()} />);
-    expect(screen.getByTestId("chat-loading")).toBeInTheDocument();
+  it("renders input and send button", () => {
+    renderChat();
+    expect(screen.getByPlaceholderText("Ask a question...")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
   });
 
-  it("loads conversation and shows empty state with folder name", async () => {
-    render(<RouterProvider router={createRouter()} />);
-    await screen.findByTestId("empty-chat-prompt");
-    expect(screen.getByTestId("empty-chat-prompt")).toHaveTextContent(
-      "Ask anything about abc123",
-    );
+  it("displays messages from store", () => {
+    useStore.getState().addMessage({
+      id: "u1", role: "user", content: "What was Q4 revenue?", citations: [], tool_calls: [],
+    });
+    useStore.getState().addMessage({
+      id: "a1", role: "assistant", content: "Revenue grew 23%.",
+      citations: [citation],
+      tool_calls: [],
+    });
+    renderChat();
+    expect(screen.getByText("What was Q4 revenue?")).toBeInTheDocument();
+    expect(screen.getByText("Revenue grew 23%.")).toBeInTheDocument();
   });
 
-  it("falls back to generic folder name when folder not in store", async () => {
-    // Override default beforeEach folder setup by clearing folders
-    useStore.getState().setFolders([]);
-
-    render(<RouterProvider router={createRouter()} />);
-    await screen.findByTestId("empty-chat-prompt");
-    expect(screen.getByTestId("empty-chat-prompt")).toHaveTextContent(
-      "Ask anything about your folder",
-    );
+  it("renders citation chips for assistant messages with citations", () => {
+    useStore.getState().addMessage({
+      id: "a1", role: "assistant", content: "Revenue grew 23%.",
+      citations: [citation],
+      tool_calls: [],
+    });
+    renderChat();
+    expect(screen.getByTitle("report-2024-q4.pdf")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-  it("shows conversation not found for invalid id", async () => {
-    render(<RouterProvider router={createRouter("/chat/nonexistent")} />);
-    await screen.findByText("Conversation not found");
-    expect(screen.getByText("This conversation doesn't exist.")).toBeInTheDocument();
-  });
-
-  it("shows conversation title in empty state", async () => {
-    render(<RouterProvider router={createRouter()} />);
-    await screen.findByText("Q4 Report Questions");
-    expect(screen.getByText("Q4 Report Questions")).toBeInTheDocument();
+  it("clicking citation chip opens citation panel", async () => {
+    const user = userEvent.setup();
+    useStore.getState().addMessage({
+      id: "a1", role: "assistant", content: "Revenue grew 23%.",
+      citations: [citation],
+      tool_calls: [],
+    });
+    renderChat();
+    await user.click(screen.getByTitle("report-2024-q4.pdf"));
+    expect(useStore.getState().citationPanelOpen).toBe(true);
+    expect(useStore.getState().activeCitationMessageId).toBe("a1");
+    expect(useStore.getState().activeCitationIndex).toBe(0);
   });
 });

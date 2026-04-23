@@ -217,6 +217,7 @@ describe("chat slice", () => {
     useStore.getState().removeMessage("m1");
     expect(useStore.getState().messages).toHaveLength(1);
     expect(useStore.getState().messages[0].id).toBe("m2");
+=======
   });
 });
 
@@ -236,5 +237,32 @@ describe("ui slice", () => {
 
   it("starts with citation panel closed", () => {
     expect(useStore.getState().citationPanelOpen).toBe(false);
+  });
+
+  it("starts with null activeCitationMessageId", () => {
+    expect(useStore.getState().activeCitationMessageId).toBeNull();
+  });
+
+  it("openCitationPanel sets messageId, index, and opens panel", () => {
+    useStore.getState().openCitationPanel("msg_1", 2);
+    expect(useStore.getState().citationPanelOpen).toBe(true);
+    expect(useStore.getState().activeCitationMessageId).toBe("msg_1");
+    expect(useStore.getState().activeCitationIndex).toBe(2);
+  });
+
+  it("closeCitationPanel clears all citation state", () => {
+    useStore.getState().openCitationPanel("msg_1", 0);
+    useStore.getState().closeCitationPanel();
+    expect(useStore.getState().citationPanelOpen).toBe(false);
+    expect(useStore.getState().activeCitationMessageId).toBeNull();
+    expect(useStore.getState().activeCitationIndex).toBeNull();
+  });
+
+  it("openCitationPanel overwrites previous state", () => {
+    useStore.getState().openCitationPanel("msg_1", 0);
+    useStore.getState().openCitationPanel("msg_2", 3);
+    expect(useStore.getState().activeCitationMessageId).toBe("msg_2");
+    expect(useStore.getState().activeCitationIndex).toBe(3);
+    expect(useStore.getState().citationPanelOpen).toBe(true);
   });
 });

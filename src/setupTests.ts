@@ -4,4 +4,5 @@ import { afterEach } from "vitest";
 
 afterEach(() => cleanup());
 
-window.HTMLElement.prototype.scrollIntoView = function () {};
+// jsdom does not implement scrollIntoView
+Element.prototype.scrollIntoView = () => {};

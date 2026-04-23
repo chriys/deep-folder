@@ -5,6 +5,7 @@ import { readSSEStream } from "../api/readSSE";
 import { sendMessageRequest, generateMessageId } from "../api/chat";
 import { MessageList } from "../components/MessageList";
 import { ChatInput } from "../components/ChatInput";
+import { CitationPanel } from "../components/CitationPanel";
 import type { Message } from "../types";
 
 export function Chat() {
@@ -17,6 +18,7 @@ export function Chat() {
   const finalizeMessage = useStore((s) => s.finalizeMessage);
   const setMessageError = useStore((s) => s.setMessageError);
   const removeMessage = useStore((s) => s.removeMessage);
+  const closeCitationPanel = useStore((s) => s.closeCitationPanel);
 
   const sendingRef = useRef(false);
 
@@ -24,6 +26,7 @@ export function Chat() {
     async (content: string) => {
       if (!convId || sendingRef.current) return;
       sendingRef.current = true;
+      closeCitationPanel();
 
       const userMsg: Message = {
         id: generateMessageId(),
@@ -91,6 +94,7 @@ export function Chat() {
       appendStreamCitation,
       finalizeMessage,
       setMessageError,
+      closeCitationPanel,
     ],
   );
 
@@ -117,6 +121,7 @@ export function Chat() {
         <MessageList messages={messages} onRetry={handleRetry} />
       </div>
       <ChatInput onSend={handleSend} disabled={isStreaming} />
+      <CitationPanel />
     </div>
   );
 }

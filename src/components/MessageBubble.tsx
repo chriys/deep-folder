@@ -1,3 +1,4 @@
+import { useStore } from "../stores";
 import type { Message } from "../types";
 
 interface MessageBubbleProps {
@@ -6,6 +7,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
+  const openCitationPanel = useStore((s) => s.openCitationPanel);
   const isUser = message.role === "user";
 
   return (
@@ -27,12 +29,14 @@ export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
             {message.citations.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {message.citations.map((c, i) => (
-                  <span
+                  <button
                     key={i}
-                    className="inline-flex items-center rounded bg-white/80 px-2 py-0.5 text-xs text-gray-600"
+                    onClick={() => openCitationPanel(message.id, i)}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-medium text-gray-600 shadow-sm hover:bg-blue-100 hover:text-blue-700"
+                    title={c.file_name}
                   >
-                    {c.file_name}
-                  </span>
+                    {i + 1}
+                  </button>
                 ))}
               </div>
             )}
