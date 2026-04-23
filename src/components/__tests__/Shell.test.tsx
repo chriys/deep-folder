@@ -1,48 +1,33 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
+import { handlers } from "../../mocks/handlers";
+import { resetDb, getDb } from "../../mocks/db";
 import { useStore } from "../../stores";
 import { Shell } from "../Shell";
 
-const MOCK_FOLDERS = [
-  {
-    id: "f1",
-    drive_url: "https://drive.google.com/drive/folders/abc123",
-    ingest_state: "done" as const,
-    created_at: "2024-01-01",
-  },
-  {
-    id: "f2",
-    drive_url: "https://drive.google.com/drive/folders/def456",
-    ingest_state: "running" as const,
-    created_at: "2024-01-02",
-  },
-  {
-    id: "f3",
-    drive_url: "https://drive.google.com/drive/folders/ghi789",
-    ingest_state: "failed" as const,
-    created_at: "2024-01-03",
-  },
-];
+const server = setupServer(...handlers);
 
-const server = setupServer(
-  http.get("/folders", () => HttpResponse.json(MOCK_FOLDERS)),
-);
+beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  resetDb();
+});
+afterAll(() => server.close());
 
-function TestContent() {
-  return <div data-testid="outlet-content">Content</div>;
-}
+const initialState = useStore.getState();
 
-function createRouter(initialRoute = "/") {
+function createRouter(initialRoute = "/folders") {
   return createMemoryRouter(
     [
       {
         element: <Shell />,
         children: [
-          { path: "/", element: <TestContent /> },
-          { path: "/folders/:id", element: <TestContent /> },
+          { path: "/folders", element: <div data-testid="shell-outlet">Outlet</div> },
+          { path: "/chat/:convId", element: <div data-testid="chat-page">Chat</div> },
         ],
       },
     ],
@@ -50,35 +35,16 @@ function createRouter(initialRoute = "/") {
   );
 }
 
-const initialState = useStore.getState();
-
 describe("Shell sidebar", () => {
-  beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
-  afterEach(() => {
-    cleanup();
-    server.resetHandlers();
-    localStorage.clear();
+  beforeEach(() => {
     useStore.setState(initialState);
   });
-  afterAll(() => server.close());
 
   it("shows user email and green dot when authenticated", () => {
     useStore.getState().setStatus("authenticated");
     useStore.getState().setEmail("user@example.com");
 
-    const router = createMemoryRouter(
-      [
-        {
-          element: <Shell />,
-          children: [
-            { path: "/folders", element: <div>Folders Content</div> },
-          ],
-        },
-      ],
-      { initialEntries: ["/folders"] },
-    );
-
-    render(<RouterProvider router={router} />);
+    render(<RouterProvider router={createRouter("/folders")} />);
     expect(screen.getAllByTestId("session-indicator")[0]).toBeInTheDocument();
     expect(screen.getAllByTestId("user-email")[0]).toHaveTextContent(
       "user@example.com",
@@ -90,62 +56,69 @@ describe("Shell sidebar", () => {
     useStore.getState().setStatus("authenticated");
     useStore.getState().setEmail("user@example.com");
 
-    const router = createMemoryRouter(
-      [
-        {
-          element: <Shell />,
-          children: [
-            { path: "/folders", element: <div>Folders Content</div> },
-          ],
-        },
-      ],
-      { initialEntries: ["/folders"] },
-    );
-
-    render(<RouterProvider router={router} />);
+    render(<RouterProvider router={createRouter("/folders")} />);
     expect(screen.getAllByTestId("disconnect-button")[0]).toBeInTheDocument();
     expect(screen.getAllByTestId("disconnect-button")[0]).toHaveTextContent(
       "Disconnect",
     );
   });
 
-  it("renders folder cards with correct state badges", async () => {
+  it("loads and shows folders from API", async () => {
     render(<RouterProvider router={createRouter()} />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("folder-card-f1")).toBeInTheDocument();
-    });
-
-    expect(screen.getByTestId("folder-card-f1")).toBeInTheDocument();
-    expect(screen.getByTestId("folder-card-f2")).toBeInTheDocument();
-    expect(screen.getByTestId("folder-card-f3")).toBeInTheDocument();
-
-    expect(screen.getByTestId("badge-f1")).toHaveTextContent("done");
-    expect(screen.getByTestId("badge-f2")).toHaveTextContent("running");
-    expect(screen.getByTestId("badge-f3")).toHaveTextContent("failed");
+    await screen.findByTestId("folder-folder_1");
+    expect(screen.getByTestId("folder-folder_1")).toHaveTextContent("abc123");
   });
 
-  it("highlights active folder on matching route", async () => {
-    render(<RouterProvider router={createRouter("/folders/f1")} />);
-
-    await waitFor(() => {
-      const card = screen.getByTestId("folder-card-f1");
-      expect(card.className).toContain("bg-blue-100");
-    });
-
-    const card2 = screen.getByTestId("folder-card-f2");
-    expect(card2.className).not.toContain("bg-blue-100");
+  it("selects first folder by default", async () => {
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("folder-folder_1");
+    expect(screen.getByTestId("folder-folder_1").getAttribute("data-active")).toBe("true");
   });
 
-  it("sets active folder on click", async () => {
-    render(<RouterProvider router={createRouter()} />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("folder-card-f1")).toBeInTheDocument();
+  it("switching folder updates active state", async () => {
+    getDb().folders.push({
+      id: "folder_2",
+      drive_url: "https://drive.google.com/drive/u/0/my-drive",
+      ingest_state: "done",
+      created_at: "2026-04-22T10:00:00Z",
+      files: [],
+      skipped_files: [],
     });
 
-    fireEvent.click(screen.getByTestId("folder-card-f1"));
-    expect(useStore.getState().activeFolderId).toBe("f1");
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("folder-folder_2");
+    await userEvent.click(screen.getByTestId("folder-folder_2"));
+    expect(screen.getByTestId("folder-folder_2").getAttribute("data-active")).toBe("true");
+    expect(screen.getByTestId("folder-folder_1").getAttribute("data-active")).toBe("false");
+  });
+
+  it("shows conversations for active folder", async () => {
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("conv-conv_1");
+    expect(screen.getByTestId("conv-conv_1")).toHaveTextContent("Q4 Report Questions");
+  });
+
+  it("shows empty state when no conversations", async () => {
+    getDb().conversations = [];
+
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("no-conversations");
+    expect(screen.getByTestId("no-conversations")).toHaveTextContent("No conversations yet");
+  });
+
+  it("new conversation button disabled when no folders exist", async () => {
+    getDb().folders = [];
+
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("new-conversation");
+    expect(screen.getByTestId("new-conversation")).toBeDisabled();
+  });
+
+  it("clicking conversation navigates to chat page", async () => {
+    render(<RouterProvider router={createRouter()} />);
+    await screen.findByTestId("conv-conv_1");
+    await userEvent.click(screen.getByTestId("conv-conv_1"));
+    expect(screen.getByTestId("chat-page")).toBeInTheDocument();
   });
 
   it("cmd+b toggles sidebar", async () => {
@@ -153,10 +126,10 @@ describe("Shell sidebar", () => {
 
     expect(useStore.getState().sidebarOpen).toBe(true);
 
-    fireEvent.keyDown(window, { metaKey: true, key: "b" });
+    await userEvent.keyboard("{Meta>}b{/Meta}");
     expect(useStore.getState().sidebarOpen).toBe(false);
 
-    fireEvent.keyDown(window, { metaKey: true, key: "b" });
+    await userEvent.keyboard("{Meta>}b{/Meta}");
     expect(useStore.getState().sidebarOpen).toBe(true);
   });
 
@@ -171,16 +144,8 @@ describe("Shell sidebar", () => {
     useStore.setState({ ...useStore.getState(), sidebarOpen: false });
     render(<RouterProvider router={createRouter()} />);
 
-    fireEvent.click(screen.getByTestId("sidebar-toggle-collapsed"));
+    userEvent.click(screen.getByTestId("sidebar-toggle-collapsed"));
     expect(useStore.getState().sidebarOpen).toBe(true);
-  });
-
-  it("shows conversations section placeholder", async () => {
-    render(<RouterProvider router={createRouter()} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Conversations")).toBeInTheDocument();
-    });
   });
 
   it("persists sidebar state to localStorage", () => {
