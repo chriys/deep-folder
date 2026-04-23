@@ -5,6 +5,9 @@ RUN apt-get update && apt-get install -y \
   git \
   curl \
   jq \
+  python3 \
+  python3-pip \
+  python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
@@ -14,6 +17,13 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
   | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
   && apt-get update && apt-get install -y gh \
   && rm -rf /var/lib/apt/lists/*
+
+# Create Python venv
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Fix permissions for non-root user
+RUN chown -R node:node /opt/venv
 
 # Rename the base image's "node" user (UID 1000) to "agent".
 # This keeps UID 1000 so that --userns=keep-id (Podman) and
@@ -29,8 +39,16 @@ ENV PATH="/home/agent/.local/bin:$PATH"
 
 WORKDIR /home/agent
 
-# Attempt to optimize token usage using mksglu/context-mode plugin via mcp installation
-RUN claude mcp add context-mode -- npx -y context-mode
+# Install Token Optimization tools
+# Reduce command output to context window
+RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+RUN rtk init -g
+
+# Optimize code navigation token usage using mksglu/context-mode plugin
+RUN claude plugin marketplace add mksglu/context-mode && claude plugin install context-mode@context-mode
+
+# Talk like caveman optimize output token
+RUN claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman
 
 # Install a 21st.dev mcp for premium design
 RUN claude mcp add magic --scope user --env API_KEY="$21ST_DEV_API_KEY" -- npx -y @21st-dev/magic@latest
