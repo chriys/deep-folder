@@ -13,6 +13,8 @@ export interface ChatSlice {
   setMessages: (messages: Message[]) => void;
   setStreamState: (state: StreamState) => void;
   setCitations: (citations: Citation[]) => void;
+  appendToLastMessage: (content: string) => void;
+  addCitationToLastMessage: (citation: Citation) => void;
 }
 
 export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
@@ -25,4 +27,22 @@ export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
   setMessages: (messages) => set({ messages }),
   setStreamState: (streamState) => set({ streamState }),
   setCitations: (citations) => set({ citations }),
+  appendToLastMessage: (content) =>
+    set((s) => {
+      const msgs = [...s.messages];
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === "assistant") {
+        msgs[msgs.length - 1] = { ...last, content: last.content + content };
+      }
+      return { messages: msgs };
+    }),
+  addCitationToLastMessage: (citation) =>
+    set((s) => {
+      const msgs = [...s.messages];
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === "assistant") {
+        msgs[msgs.length - 1] = { ...last, citations: [...last.citations, citation] };
+      }
+      return { messages: msgs };
+    }),
 });
