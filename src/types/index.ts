@@ -12,6 +12,8 @@ export interface Message {
   content: string;
   citations: Citation[];
   tool_calls: [];
+  status?: "pending" | "streaming" | "done" | "error";
+  error?: string;
 }
 
 export type IngestState = "pending" | "running" | "done" | "failed";
