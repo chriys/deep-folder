@@ -1,8 +1,16 @@
 import { Link } from "react-router";
 import { useStore } from "../stores";
+import { SkeletonFolderList } from "../components/Skeletons";
+import { ErrorState } from "../components/States";
 
 export function Folders() {
   const folders = useStore((s) => s.folders);
+  const foldersLoading = useStore((s) => s.foldersLoading);
+  const foldersError = useStore((s) => s.foldersError);
+  const fetchFolders = useStore((s) => s.fetchFolders);
+
+  if (foldersLoading && folders.length === 0) return <SkeletonFolderList />;
+  if (foldersError) return <ErrorState message={foldersError} onRetry={fetchFolders} />;
 
   if (folders.length === 0) {
     return (

@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, afterAll, beforeEach } from "vitest";
+import { http, HttpResponse } from "msw";
+import { server } from "../../test-utils";
 import { useStore } from "../index";
 
 const initialState = useStore.getState();
+
+beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe("auth slice", () => {
   it("starts unauthenticated", () => {
@@ -31,6 +37,13 @@ describe("folder slice", () => {
     expect(useStore.getState().activeFolderId).toBeNull();
   });
 
+  it("starts with not loading and no error", () => {
+    expect(useStore.getState().foldersLoading).toBe(false);
+    expect(useStore.getState().foldersError).toBeNull();
+    expect(useStore.getState().folderDetailLoading).toBe(false);
+    expect(useStore.getState().folderDetailError).toBeNull();
+  });
+
   it("setFolders updates folder list", () => {
     const folder = {
       id: "1",
@@ -41,6 +54,44 @@ describe("folder slice", () => {
     useStore.getState().setFolders([folder]);
     expect(useStore.getState().folders).toHaveLength(1);
     expect(useStore.getState().folders[0].id).toBe("1");
+  });
+
+  it("fetchFolders loads folders via API", async () => {
+    const { fetchFolders } = useStore.getState();
+    const promise = fetchFolders();
+    expect(useStore.getState().foldersLoading).toBe(true);
+    await promise;
+    expect(useStore.getState().foldersLoading).toBe(false);
+    expect(useStore.getState().foldersError).toBeNull();
+    expect(useStore.getState().folders.length).toBeGreaterThan(0);
+    expect(useStore.getState().folders[0].id).toBe("folder_1");
+  });
+
+  it("fetchFolders sets error on failure", async () => {
+    server.use(http.get("/folders", () => HttpResponse.error()));
+    const { fetchFolders } = useStore.getState();
+    await fetchFolders();
+    expect(useStore.getState().foldersLoading).toBe(false);
+    expect(useStore.getState().foldersError).toBeTruthy();
+  });
+
+  it("fetchFolderDetail loads detail via API", async () => {
+    const { fetchFolderDetail } = useStore.getState();
+    const promise = fetchFolderDetail("folder_1");
+    expect(useStore.getState().folderDetailLoading).toBe(true);
+    await promise;
+    expect(useStore.getState().folderDetailLoading).toBe(false);
+    expect(useStore.getState().folderDetailError).toBeNull();
+    expect(useStore.getState().activeFolderDetail).toBeTruthy();
+    expect(useStore.getState().activeFolderDetail?.id).toBe("folder_1");
+  });
+
+  it("fetchFolderDetail sets error on failure", async () => {
+    server.use(http.get("/folders/folder_1", () => HttpResponse.error()));
+    const { fetchFolderDetail } = useStore.getState();
+    await fetchFolderDetail("folder_1");
+    expect(useStore.getState().folderDetailLoading).toBe(false);
+    expect(useStore.getState().folderDetailError).toBeTruthy();
   });
 });
 
@@ -59,6 +110,14 @@ describe("chat slice", () => {
     expect(useStore.getState().streamState).toBe("idle");
   });
 
+  it("starts with empty conversations and no loading/error", () => {
+    expect(useStore.getState().conversations).toEqual([]);
+    expect(useStore.getState().conversationsLoading).toBe(false);
+    expect(useStore.getState().conversationsError).toBeNull();
+    expect(useStore.getState().activeConversationLoading).toBe(false);
+    expect(useStore.getState().activeConversationError).toBeNull();
+  });
+
   it("addMessage appends to messages", () => {
     const msg = {
       id: "m1",
@@ -70,6 +129,44 @@ describe("chat slice", () => {
     useStore.getState().addMessage(msg);
     expect(useStore.getState().messages).toHaveLength(1);
     expect(useStore.getState().messages[0].content).toBe("hello");
+  });
+
+  it("fetchConversations loads conversations via API", async () => {
+    const { fetchConversations } = useStore.getState();
+    const promise = fetchConversations();
+    expect(useStore.getState().conversationsLoading).toBe(true);
+    await promise;
+    expect(useStore.getState().conversationsLoading).toBe(false);
+    expect(useStore.getState().conversationsError).toBeNull();
+    expect(useStore.getState().conversations.length).toBeGreaterThan(0);
+    expect(useStore.getState().conversations[0].id).toBe("conv_1");
+  });
+
+  it("fetchConversations sets error on failure", async () => {
+    server.use(http.get("/conversations", () => HttpResponse.error()));
+    const { fetchConversations } = useStore.getState();
+    await fetchConversations();
+    expect(useStore.getState().conversationsLoading).toBe(false);
+    expect(useStore.getState().conversationsError).toBeTruthy();
+  });
+
+  it("fetchConversation loads single conversation via API", async () => {
+    const { fetchConversation } = useStore.getState();
+    const promise = fetchConversation("conv_1");
+    expect(useStore.getState().activeConversationLoading).toBe(true);
+    await promise;
+    expect(useStore.getState().activeConversationLoading).toBe(false);
+    expect(useStore.getState().activeConversationError).toBeNull();
+    expect(useStore.getState().activeConversation).toBeTruthy();
+    expect(useStore.getState().activeConversation?.id).toBe("conv_1");
+  });
+
+  it("fetchConversation sets error on failure", async () => {
+    server.use(http.get("/conversations/conv_1", () => HttpResponse.error()));
+    const { fetchConversation } = useStore.getState();
+    await fetchConversation("conv_1");
+    expect(useStore.getState().activeConversationLoading).toBe(false);
+    expect(useStore.getState().activeConversationError).toBeTruthy();
   });
 });
 
