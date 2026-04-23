@@ -51,15 +51,15 @@ export const handlers = [
     if (!body?.drive_url) {
       return HttpResponse.json({ error: "drive_url is required" }, { status: 400 });
     }
-    if (body.drive_url.includes("/folders/")) {
-      return HttpResponse.json({ error: "Shared Drive URLs are not supported" }, { status: 400 });
-    }
     const db = getDb();
     const folder = {
       id: `folder_${fakeId()}`,
       drive_url: body.drive_url,
       ingest_state: "pending" as const,
       created_at: new Date().toISOString(),
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
       files: [],
       skipped_files: [],
     };
@@ -80,7 +80,7 @@ export const handlers = [
     }
     const callCount = getFolderCallCount(folder.id);
     incrementFolderCallCount(folder.id);
-    if (callCount > 0) {
+    if (callCount > 0 && folder.ingest_state !== "done" && folder.ingest_state !== "failed") {
       folder.ingest_state = nextIngestState(folder.ingest_state);
     }
     return HttpResponse.json(folder);

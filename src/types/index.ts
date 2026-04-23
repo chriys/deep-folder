@@ -16,11 +16,30 @@ export interface Message {
 
 export type IngestState = "pending" | "running" | "done" | "failed";
 
+export interface IngestFile {
+  id: string;
+  name: string;
+  mime_type: string;
+  drive_file_id: string;
+}
+
+export interface SkippedFile extends IngestFile {
+  skip_reason: string;
+}
+
 export interface Folder {
   id: string;
   drive_url: string;
   ingest_state: IngestState;
   created_at: string;
+  file_count: number;
+  skipped_file_count: number;
+  error_message: string | null;
+}
+
+export interface FolderDetail extends Folder {
+  files: IngestFile[];
+  skipped_files: SkippedFile[];
 }
 
 export interface Conversation {

@@ -1,5 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach } from "vitest";
+import { setupServer } from "msw/node";
+import { handlers } from "../../mocks/handlers";
+import { resetDb, resetFolderCallCounts } from "../../mocks/db";
 import { useStore } from "../index";
+
+const server = setupServer(...handlers);
+
+beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
+afterEach(() => {
+  server.resetHandlers();
+  resetDb();
+  resetFolderCallCounts();
+});
+afterAll(() => server.close());
 
 const initialState = useStore.getState();
 
@@ -12,6 +25,7 @@ describe("auth slice", () => {
 
   it("starts with null email", () => {
     expect(useStore.getState().email).toBeNull();
+  });
   });
 
   it("setStatus updates auth status", () => {
@@ -50,10 +64,46 @@ describe("folder slice", () => {
       drive_url: "https://drive.google.com/drive/folders/abc",
       ingest_state: "done" as const,
       created_at: "2024-01-01",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
     };
     useStore.getState().setFolders([folder]);
     expect(useStore.getState().folders).toHaveLength(1);
     expect(useStore.getState().folders[0].id).toBe("1");
+  });
+
+  it("createFolder posts URL and adds folder to list", async () => {
+    const folder = await useStore.getState().createFolder("https://drive.google.com/drive/folders/xyz");
+    expect(folder.ingest_state).toBe("pending");
+    expect(folder.drive_url).toBe("https://drive.google.com/drive/folders/xyz");
+    const state = useStore.getState();
+    expect(state.folders).toHaveLength(1);
+    expect(state.folders[0].drive_url).toBe("https://drive.google.com/drive/folders/xyz");
+  });
+
+  it("removeFolder deletes folder from store and API", async () => {
+    const folder = await useStore.getState().createFolder("https://drive.google.com/drive/folders/xyz");
+    expect(useStore.getState().folders).toHaveLength(1);
+
+    await useStore.getState().removeFolder(folder.id);
+    expect(useStore.getState().folders).toHaveLength(0);
+  });
+
+  it("updateFolder patches specific fields", () => {
+    const folder = {
+      id: "1",
+      drive_url: "https://drive.google.com/drive/folders/abc",
+      ingest_state: "done" as const,
+      created_at: "2024-01-01",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
+    };
+    useStore.getState().setFolders([folder]);
+    useStore.getState().updateFolder("1", { ingest_state: "running" });
+    expect(useStore.getState().folders[0].ingest_state).toBe("running");
+    expect(useStore.getState().folders[0].drive_url).toBe("https://drive.google.com/drive/folders/abc");
   });
 });
 
