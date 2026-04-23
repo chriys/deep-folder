@@ -4,13 +4,17 @@ import * as api from "../api/folders";
 
 export interface FolderSlice {
   folders: Folder[];
+  foldersLoading: boolean;
+  foldersError: string | null;
   activeFolderId: string | null;
-  folderLoading: boolean;
-  folderError: string | null;
-  fetchFolders: () => Promise<void>;
+  activeFolderDetail: Folder | null;
+  folderDetailLoading: boolean;
+  folderDetailError: string | null;
   setFolders: (folders: Folder[]) => void;
   setActiveFolder: (id: string | null) => void;
   createFolder: (driveUrl: string) => Promise<Folder>;
+  fetchFolders: () => Promise<void>;
+  fetchFolderDetail: (id: string) => Promise<void>;
   loadFolders: () => Promise<void>;
   loadFolder: (id: string) => Promise<FolderDetail>;
   removeFolder: (id: string) => Promise<void>;
@@ -19,18 +23,12 @@ export interface FolderSlice {
 
 export const createFolderSlice: StateCreator<FolderSlice> = (set) => ({
   folders: [],
+  foldersLoading: false,
+  foldersError: null,
   activeFolderId: null,
-  folderLoading: false,
-  folderError: null,
-  fetchFolders: async () => {
-    try {
-      const res = await fetch("/folders");
-      const folders = await res.json();
-      set({ folders });
-    } catch {
-      // Silently fail
-    }
-  },
+  activeFolderDetail: null,
+  folderDetailLoading: false,
+  folderDetailError: null,
   setFolders: (folders) => set({ folders }),
   setActiveFolder: (id) => set({ activeFolderId: id }),
 
@@ -40,13 +38,37 @@ export const createFolderSlice: StateCreator<FolderSlice> = (set) => ({
     return folder;
   },
 
+  fetchFolders: async () => {
+    set({ foldersLoading: true, foldersError: null });
+    try {
+      const res = await fetch("/folders");
+      if (!res.ok) throw new Error(`Failed to load folders (${res.status})`);
+      const data = (await res.json()) as Folder[];
+      set({ folders: data, foldersLoading: false });
+    } catch (e) {
+      set({ foldersError: (e as Error).message, foldersLoading: false });
+    }
+  },
+
+  fetchFolderDetail: async (id: string) => {
+    set({ folderDetailLoading: true, folderDetailError: null });
+    try {
+      const res = await fetch(`/folders/${id}`);
+      if (!res.ok) throw new Error(`Failed to load folder (${res.status})`);
+      const data = (await res.json()) as Folder;
+      set({ activeFolderDetail: data, folderDetailLoading: false });
+    } catch (e) {
+      set({ folderDetailError: (e as Error).message, folderDetailLoading: false });
+    }
+  },
+
   loadFolders: async () => {
-    set({ folderLoading: true, folderError: null });
+    set({ foldersLoading: true, foldersError: null });
     try {
       const folders = await api.fetchFolders();
-      set({ folders, folderLoading: false });
+      set({ folders, foldersLoading: false });
     } catch {
-      set({ folderError: "Failed to load folders", folderLoading: false });
+      set({ foldersError: "Failed to load folders", foldersLoading: false });
     }
   },
 

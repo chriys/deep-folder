@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { disconnect as apiDisconnect } from "../api/auth";
 import { useStore } from "../stores";
 import { fetchFolders, fetchConversations, createConversation } from "../api";
+import { SkeletonFolderList, SkeletonConversationList } from "./Skeletons";
 import type { Conversation, Folder } from "../types";
 
 export function Shell() {
@@ -106,7 +107,7 @@ export function Shell() {
               Folders
             </p>
             {foldersLoading ? (
-              <div className="py-2 text-sm text-gray-400" data-testid="folders-loading">Loading...</div>
+              <SkeletonFolderList />
             ) : folders.length === 0 ? (
               <div className="py-2 text-sm text-gray-400" data-testid="no-folders">No folders yet</div>
             ) : (
@@ -146,9 +147,7 @@ export function Shell() {
             </div>
 
             {convLoading ? (
-              <div className="py-4 text-center text-sm text-gray-400" data-testid="conv-loading">
-                Loading...
-              </div>
+              <SkeletonConversationList />
             ) : conversations.length === 0 ? (
               <div className="py-4 text-center text-sm text-gray-400" data-testid="no-conversations">
                 No conversations yet

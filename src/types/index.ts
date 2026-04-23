@@ -37,6 +37,8 @@ export interface Folder {
   file_count: number;
   skipped_file_count: number;
   error_message: string | null;
+  files?: IngestFile[];
+  skipped_files?: SkippedFile[];
 }
 
 export interface FolderDetail extends Folder {

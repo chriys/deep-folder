@@ -3,6 +3,7 @@ import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 afterEach(() => cleanup());
+<<<<<<< HEAD
 
 // jsdom does not implement scrollIntoView
 Element.prototype.scrollIntoView = () => {};

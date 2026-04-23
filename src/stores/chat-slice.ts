@@ -8,6 +8,11 @@ export interface ChatSlice {
   messages: Message[];
   streamStatus: StreamStatus;
   streamingMessageId: string | null;
+  conversations: Conversation[];
+  conversationsLoading: boolean;
+  conversationsError: string | null;
+  activeConversationLoading: boolean;
+  activeConversationError: string | null;
   setActiveConversation: (conversation: Conversation | null) => void;
   addMessage: (message: Message) => void;
   setMessages: (messages: Message[]) => void;
@@ -17,6 +22,8 @@ export interface ChatSlice {
   setMessageError: (messageId: string, errorMessage: string) => void;
   removeMessage: (messageId: string) => void;
   resetStreamStatus: () => void;
+  fetchConversations: () => Promise<void>;
+  fetchConversation: (id: string) => Promise<void>;
 }
 
 export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
@@ -24,6 +31,11 @@ export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
   messages: [],
   streamStatus: "idle",
   streamingMessageId: null,
+  conversations: [],
+  conversationsLoading: false,
+  conversationsError: null,
+  activeConversationLoading: false,
+  activeConversationError: null,
   setActiveConversation: (conversation) => set({ activeConversation: conversation }),
   addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
   setMessages: (messages) => set({ messages }),
@@ -66,4 +78,26 @@ export const createChatSlice: StateCreator<ChatSlice> = (set) => ({
       messages: s.messages.filter((m) => m.id !== messageId),
     })),
   resetStreamStatus: () => set({ streamStatus: "idle", streamingMessageId: null }),
+  fetchConversations: async () => {
+    set({ conversationsLoading: true, conversationsError: null });
+    try {
+      const res = await fetch("/conversations");
+      if (!res.ok) throw new Error(`Failed to load conversations (${res.status})`);
+      const data = (await res.json()) as Conversation[];
+      set({ conversations: data, conversationsLoading: false });
+    } catch (e) {
+      set({ conversationsError: (e as Error).message, conversationsLoading: false });
+    }
+  },
+  fetchConversation: async (id: string) => {
+    set({ activeConversationLoading: true, activeConversationError: null });
+    try {
+      const res = await fetch(`/conversations/${id}`);
+      if (!res.ok) throw new Error(`Failed to load conversation (${res.status})`);
+      const data = (await res.json()) as Conversation;
+      set({ activeConversation: data, activeConversationLoading: false });
+    } catch (e) {
+      set({ activeConversationError: (e as Error).message, activeConversationLoading: false });
+    }
+  },
 });
