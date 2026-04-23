@@ -38,6 +38,7 @@ function createRouter(initialRoute = "/folders") {
 describe("Shell sidebar", () => {
   beforeEach(() => {
     useStore.setState(initialState);
+    localStorage.clear();
   });
 
   it("shows user email and green dot when authenticated", () => {
@@ -81,6 +82,9 @@ describe("Shell sidebar", () => {
       drive_url: "https://drive.google.com/drive/u/0/my-drive",
       ingest_state: "done",
       created_at: "2026-04-22T10:00:00Z",
+      file_count: 0,
+      skipped_file_count: 0,
+      error_message: null,
       files: [],
       skipped_files: [],
     });
@@ -140,11 +144,11 @@ describe("Shell sidebar", () => {
     expect(screen.getByTestId("sidebar-toggle-collapsed")).toBeInTheDocument();
   });
 
-  it("toggle affordance reopens sidebar", () => {
+  it("toggle affordance reopens sidebar", async () => {
     useStore.setState({ ...useStore.getState(), sidebarOpen: false });
     render(<RouterProvider router={createRouter()} />);
 
-    userEvent.click(screen.getByTestId("sidebar-toggle-collapsed"));
+    await userEvent.click(screen.getByTestId("sidebar-toggle-collapsed"));
     expect(useStore.getState().sidebarOpen).toBe(true);
   });
 

@@ -71,11 +71,11 @@ function FolderCard({ folder, onDelete }: { folder: Folder; onDelete: () => void
 }
 
 export function Folders() {
-  const { folders, createFolder, removeFolder, folderLoading } = useStore((s) => ({
+  const { folders, createFolder, removeFolder, foldersLoading } = useStore((s) => ({
     folders: s.folders,
     createFolder: s.createFolder,
     removeFolder: s.removeFolder,
-    folderLoading: s.folderLoading,
+    foldersLoading: s.foldersLoading,
   }));
 
   const [url, setUrl] = useState("");
@@ -123,7 +123,7 @@ export function Folders() {
     return true;
   })();
 
-  if (folders.length === 0 && !folderLoading) {
+  if (folders.length === 0 && !foldersLoading) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
         <h2 className="mb-2 text-xl font-semibold text-gray-900">No folders yet</h2>
@@ -196,7 +196,7 @@ export function Folders() {
         <p>This folder has more than 500 files. Indexing may take a while. Continue?</p>
       </ConfirmModal>
 
-      {folders.length === 0 && folderLoading ? (
+      {folders.length === 0 && foldersLoading ? (
         <div className="flex items-center justify-center py-12 text-gray-500">Loading folders...</div>
       ) : (
         <div className="space-y-3">

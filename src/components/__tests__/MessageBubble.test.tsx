@@ -78,7 +78,7 @@ describe("MessageBubble", () => {
       tool_calls: [] as [],
     };
     render(<MessageBubble message={msg} />);
-    expect(screen.getByText("doc.pdf")).toBeTruthy();
+    expect(screen.getByTitle("doc.pdf")).toBeTruthy();
   });
 
   it("shows streaming indicator for streaming message", () => {
