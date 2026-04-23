@@ -7,6 +7,7 @@ export interface FolderSlice {
   activeFolderId: string | null;
   folderLoading: boolean;
   folderError: string | null;
+  fetchFolders: () => Promise<void>;
   setFolders: (folders: Folder[]) => void;
   setActiveFolder: (id: string | null) => void;
   createFolder: (driveUrl: string) => Promise<Folder>;
@@ -21,7 +22,15 @@ export const createFolderSlice: StateCreator<FolderSlice> = (set) => ({
   activeFolderId: null,
   folderLoading: false,
   folderError: null,
-
+  fetchFolders: async () => {
+    try {
+      const res = await fetch("/folders");
+      const folders = await res.json();
+      set({ folders });
+    } catch {
+      // Silently fail
+    }
+  },
   setFolders: (folders) => set({ folders }),
   setActiveFolder: (id) => set({ activeFolderId: id }),
 
