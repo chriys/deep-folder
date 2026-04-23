@@ -4,8 +4,14 @@ import { useStore } from "../index";
 const initialState = useStore.getState();
 
 describe("auth slice", () => {
-  it("starts unauthenticated", () => {
-    expect(useStore.getState().status).toBe("unauthenticated");
+  beforeEach(() => useStore.setState(initialState));
+
+  it("starts loading", () => {
+    expect(useStore.getState().status).toBe("loading");
+  });
+
+  it("starts with null email", () => {
+    expect(useStore.getState().email).toBeNull();
   });
 
   it("setStatus updates auth status", () => {
@@ -13,10 +19,17 @@ describe("auth slice", () => {
     expect(useStore.getState().status).toBe("authenticated");
   });
 
-  it("disconnect resets to unauthenticated", () => {
+  it("setEmail updates email", () => {
+    useStore.getState().setEmail("user@example.com");
+    expect(useStore.getState().email).toBe("user@example.com");
+  });
+
+  it("disconnect resets to unauthenticated and clears email", () => {
     useStore.getState().setStatus("authenticated");
+    useStore.getState().setEmail("user@example.com");
     useStore.getState().disconnect();
     expect(useStore.getState().status).toBe("unauthenticated");
+    expect(useStore.getState().email).toBeNull();
   });
 });
 

@@ -31,6 +31,7 @@ describe("AuthGate", () => {
   beforeEach(() => useStore.setState(initialState));
 
   it("redirects to landing when unauthenticated", () => {
+    useStore.getState().setStatus("unauthenticated");
     const router = createRouter();
     render(<RouterProvider router={router} />);
     expect(screen.getByTestId("landing")).toBeInTheDocument();
@@ -48,6 +49,6 @@ describe("AuthGate", () => {
     useStore.getState().setStatus("loading");
     const router = createRouter();
     render(<RouterProvider router={router} />);
-    expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
+    expect(screen.getAllByTestId("loading-spinner")[0]).toBeInTheDocument();
   });
 });

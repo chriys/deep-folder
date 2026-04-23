@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthGate } from "./components/AuthGate";
 import { Shell } from "./components/Shell";
@@ -6,6 +7,7 @@ import { AuthCallback } from "./routes/AuthCallback";
 import { Folders } from "./routes/Folders";
 import { FolderDetail } from "./routes/FolderDetail";
 import { Chat } from "./routes/Chat";
+import { useStore } from "./stores";
 
 const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
@@ -25,6 +27,29 @@ const router = createBrowserRouter([
   },
 ]);
 
-export function App() {
+function AppInner() {
+  const setStatus = useStore((s) => s.setStatus);
+  const setEmail = useStore((s) => s.setEmail);
+
+  useEffect(() => {
+    fetch("/auth/status")
+      .then((res) => res.json())
+      .then((data: { connected: boolean; email: string | null }) => {
+        if (data.connected) {
+          setEmail(data.email);
+          setStatus("authenticated");
+        } else {
+          setStatus("unauthenticated");
+        }
+      })
+      .catch(() => {
+        setStatus("unauthenticated");
+      });
+  }, [setStatus, setEmail]);
+
   return <RouterProvider router={router} />;
+}
+
+export function App() {
+  return <AppInner />;
 }

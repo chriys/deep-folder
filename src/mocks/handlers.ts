@@ -23,6 +23,10 @@ export const handlers = [
   }),
 
   http.get("/auth/google/start", () => {
+    const db = getDb();
+    if (db.authAllowlistError) {
+      return HttpResponse.json({ error: "Access denied. Your account is not allowlisted." }, { status: 403 });
+    }
     return new HttpResponse(null, {
       status: 302,
       headers: { Location: "/auth/google/callback?code=mock_auth_code" },

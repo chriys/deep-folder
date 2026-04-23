@@ -25,6 +25,7 @@ interface MockDB {
   folders: MockFolder[];
   conversations: MockConversation[];
   sseErrorMode: boolean;
+  authAllowlistError: boolean;
 }
 
 const seedFiles: MockFile[] = [
@@ -55,6 +56,7 @@ const db: MockDB = {
     { id: "conv_1", folder_id: "folder_1", title: "Q4 Report Questions", created_at: "2026-04-21T14:00:00Z", messageCount: 3 },
   ],
   sseErrorMode: false,
+  authAllowlistError: false,
 };
 
 export function getDb(): MockDB {
@@ -77,6 +79,7 @@ export function resetDb(): void {
     { id: "conv_1", folder_id: "folder_1", title: "Q4 Report Questions", created_at: "2026-04-21T14:00:00Z", messageCount: 3 },
   ];
   db.sseErrorMode = false;
+  db.authAllowlistError = false;
 }
 
 const folderCallCount: Record<string, number> = {};
