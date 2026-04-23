@@ -29,7 +29,7 @@ export const handlers = [
     });
   }),
 
-  http.get("/auth/google/callback", ({ request }) => {
+  http.get("/auth/google/callback", ({ request }: { request: Request }) => {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     if (!code) {
@@ -42,7 +42,7 @@ export const handlers = [
   }),
 
   // --- Folders ---
-  http.post("/folders", async ({ request }) => {
+  http.post("/folders", async ({ request }: { request: Request }) => {
     const body = (await request.json()) as { drive_url?: string };
     if (!body?.drive_url) {
       return HttpResponse.json({ error: "drive_url is required" }, { status: 400 });
@@ -68,7 +68,7 @@ export const handlers = [
     return HttpResponse.json(folders);
   }),
 
-  http.get("/folders/:id", ({ params }) => {
+  http.get<{ id: string }>("/folders/:id", ({ params }) => {
     const { folders } = getDb();
     const folder = folders.find((f) => f.id === params.id);
     if (!folder) {
@@ -82,7 +82,7 @@ export const handlers = [
     return HttpResponse.json(folder);
   }),
 
-  http.delete("/folders/:id", ({ params }) => {
+  http.delete<{ id: string }>("/folders/:id", ({ params }) => {
     const db = getDb();
     const idx = db.folders.findIndex((f) => f.id === params.id);
     if (idx === -1) {
@@ -93,7 +93,7 @@ export const handlers = [
   }),
 
   // --- Conversations ---
-  http.post("/conversations", async ({ request }) => {
+  http.post("/conversations", async ({ request }: { request: Request }) => {
     const body = (await request.json()) as { folder_id?: string; title?: string };
     if (!body?.folder_id) {
       return HttpResponse.json({ error: "folder_id is required" }, { status: 400 });
@@ -109,7 +109,7 @@ export const handlers = [
     return HttpResponse.json(conv, { status: 201 });
   }),
 
-  http.get("/conversations", ({ request }) => {
+  http.get("/conversations", ({ request }: { request: Request }) => {
     const url = new URL(request.url);
     const folderId = url.searchParams.get("folder_id");
     const { conversations } = getDb();
@@ -119,7 +119,7 @@ export const handlers = [
     return HttpResponse.json(filtered);
   }),
 
-  http.get("/conversations/:id", ({ params }) => {
+  http.get<{ id: string }>("/conversations/:id", ({ params }) => {
     const { conversations } = getDb();
     const conv = conversations.find((c) => c.id === params.id);
     if (!conv) {
@@ -128,7 +128,7 @@ export const handlers = [
     return HttpResponse.json(conv);
   }),
 
-  http.post("/conversations/:id/messages", async ({ params }) => {
+  http.post<{ id: string }>("/conversations/:id/messages", async ({ params }) => {
     const { conversations, sseErrorMode } = getDb();
     const conv = conversations.find((c) => c.id === params.id);
     if (!conv) {
@@ -183,7 +183,7 @@ export const handlers = [
     });
   }),
 
-  http.delete("/conversations/:id", ({ params }) => {
+  http.delete<{ id: string }>("/conversations/:id", ({ params }) => {
     const db = getDb();
     const idx = db.conversations.findIndex((c) => c.id === params.id);
     if (idx === -1) {
