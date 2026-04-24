@@ -1,6 +1,6 @@
 # ISSUES
 
-Below are open issues in the repo:
+Here are the open issues in the repo:
 
 <issues-json>
 

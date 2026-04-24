@@ -14,7 +14,28 @@
       "Bash(fly secrets *)",
       "Bash(rtk git *)",
       "Bash(rtk find *)",
-      "Bash(vercel *)"
+      "Bash(vercel *)",
+      "Bash(pnpm exec playwright test:*)",
+      "Bash(pnpm check)",
+      "Bash(pnpm run check*)",
+      "Bash(pnpm run test*)",
+      "Bash(pnpm exec vitest*)",
+      "Bash(pnpm exec playwright*)",
+      "Bash(pnpm vitest*)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpx tsc *)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git commit -S *)",
+      "Bash(git commit -S -m *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git commit:*)",
+      "Bash(cp -R*)",
+      "Bash(cp -r*)",
+      "Bash(rsync -a *)"
     ]
   }
 }

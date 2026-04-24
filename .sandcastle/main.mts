@@ -1,12 +1,17 @@
-// Parallel Planner — three-phase orchestration loop
+// Parallel Planner with Review — four-phase orchestration loop
 //
 // This template drives a multi-phase workflow:
-//   Phase 1 (Plan):    An opus agent analyzes open issues, builds a dependency
-//                      graph, and outputs a <plan> JSON listing unblocked issues
-//                      with their target branch names.
-//   Phase 2 (Execute): N sonnet agents run in parallel via Promise.allSettled,
-//                      each working a single issue on its own branch.
-//   Phase 3 (Merge):   A sonnet agent merges all branches that produced commits.
+//   Phase 1 (Plan):             An opus agent analyzes open issues, builds a
+//                               dependency graph, and outputs a <plan> JSON
+//                               listing unblocked issues with branch names.
+//   Phase 2 (Execute + Review): For each issue, a sandbox is created via
+//                               createSandbox(). The implementer runs first
+//                               (100 iterations). If it produces commits, a
+//                               reviewer runs in the same sandbox on the same
+//                               branch (1 iteration). All issue pipelines run
+//                               concurrently via Promise.allSettled().
+//   Phase 3 (Merge):            A single agent merges all completed branches
+//                               into the current branch.
 //
 // The outer loop repeats up to MAX_ITERATIONS times so that newly unblocked
 // issues are picked up after each round of merges.
@@ -62,7 +67,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     // not write code.
     maxIterations: 1,
     // Opus for planning: dependency analysis benefits from deeper reasoning.
-    agent: sandcastle.claudeCode("deepseek-reasoner"),
+    agent: sandcastle.claudeCode("claude-opus-4-6"),
     promptFile: "./.sandcastle/plan-prompt.md",
   });
 
@@ -93,38 +98,56 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   }
 
   // -------------------------------------------------------------------------
-  // Phase 2: Execute
+  // Phase 2: Execute + Review
   //
-  // Spawn one sonnet agent per issue, all running concurrently.
-  // Each agent works on its own branch so there are no conflicts during
-  // execution — merging happens in Phase 3.
+  // For each issue, create a sandbox via createSandbox() so the implementer
+  // and reviewer share the same sandbox instance per branch. The implementer
+  // runs first; if it produces commits, the reviewer runs in the same sandbox.
   //
-  // Promise.allSettled means one failing agent doesn't cancel the others.
+  // Promise.allSettled means one failing pipeline doesn't cancel the others.
   // -------------------------------------------------------------------------
+
   const settled = await Promise.allSettled(
-    issues.map((issue) =>
-      sandcastle.run({
+    issues.map(async (issue) => {
+      const sandbox = await sandcastle.createSandbox({
+        branch: issue.branch,
+        sandbox: docker(),
         hooks,
         copyToWorktree,
-        // Each agent starts on its own branch via branchStrategy on run().
-        sandbox: docker(),
-        branchStrategy: { type: "branch", branch: issue.branch },
-        name: "implementer",
-        // Give each agent plenty of room to implement and iterate on tests.
-        maxIterations: 100,
-        // Sonnet for execution: fast and capable enough for typical issue work.
-        agent: sandcastle.claudeCode("deepseek-chat"),
-        promptFile: "./.sandcastle/implement-prompt.md",
-        // Prompt arguments substitute {{TASK_ID}}, {{ISSUE_TITLE}},
-        // and {{BRANCH}} placeholders in implement-prompt.md before the
-        // agent sees the prompt.
-        promptArgs: {
-          TASK_ID: issue.id,
-          ISSUE_TITLE: issue.title,
-          BRANCH: issue.branch,
-        },
-      }),
-    ),
+      });
+
+      try {
+        // Run the implementer
+        const implement = await sandbox.run({
+          name: "implementer",
+          maxIterations: 100,
+          agent: sandcastle.claudeCode("claude-sonnet-4-6"),
+          promptFile: "./.sandcastle/implement-prompt.md",
+          promptArgs: {
+            TASK_ID: issue.id,
+            ISSUE_TITLE: issue.title,
+            BRANCH: issue.branch,
+          },
+        });
+
+        // Only review if the implementer produced commits
+        if (implement.commits.length > 0) {
+          await sandbox.run({
+            name: "reviewer",
+            maxIterations: 1,
+            agent: sandcastle.claudeCode("claude-sonnet-4-6"),
+            promptFile: "./.sandcastle/review-prompt.md",
+            promptArgs: {
+              BRANCH: issue.branch,
+            },
+          });
+        }
+
+        return implement;
+      } finally {
+        await sandbox.close();
+      }
+    }),
   );
 
   // Log any agents that threw (network error, sandbox crash, etc.).
@@ -141,14 +164,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   const completedIssues = settled
     .map((outcome, i) => ({ outcome, issue: issues[i]! }))
     .filter(
-      (
-        entry,
-      ): entry is {
-        outcome: PromiseFulfilledResult<
-          Awaited<ReturnType<typeof sandcastle.run>>
-        >;
-        issue: (typeof issues)[number];
-      } =>
+      (entry) =>
         entry.outcome.status === "fulfilled" &&
         entry.outcome.value.commits.length > 0,
     )
@@ -172,8 +188,8 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // -------------------------------------------------------------------------
   // Phase 3: Merge
   //
-  // One sonnet agent merges all completed branches into the current branch,
-  // resolving any conflicts and running tests to confirm everything still works.
+  // One agent merges all completed branches into the current branch,
+  // resolving any conflicts and running tests to confirm everything works.
   //
   // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
   // uses to know which branches to merge and which issues to close.
@@ -183,8 +199,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     sandbox: docker(),
     name: "merger",
     maxIterations: 1,
-    // Sonnet is sufficient for merge conflict resolution.
-    agent: sandcastle.claudeCode("deepseek-chat"),
+    agent: sandcastle.claudeCode("claude-sonnet-4-6"),
     promptFile: "./.sandcastle/merge-prompt.md",
     promptArgs: {
       // A markdown list of branch names, one per line.
