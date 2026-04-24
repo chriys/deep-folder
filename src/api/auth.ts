@@ -19,8 +19,8 @@ export async function getAuthStatus(): Promise<AuthStatusResponse> {
   return res.json();
 }
 
-export function startGoogleAuth(): void {
-  window.location.href = apiUrl("/auth/google/start");
+export function startGoogleAuth(returnTo = "/folders"): void {
+  window.location.href = apiUrl(`/auth/google/start?return_to=${encodeURIComponent(returnTo)}`);
 }
 
 export async function handleAuthCallback(

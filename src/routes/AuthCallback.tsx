@@ -8,6 +8,7 @@ export function AuthCallback() {
   const setStatus = useStore((s) => s.setStatus);
   const setEmail = useStore((s) => s.setEmail);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -29,6 +30,7 @@ export function AuthCallback() {
         }
         setEmail(body.email);
         setStatus("authenticated");
+        setDone(true);
       })
       .catch(() => {
         setError("Network error during authentication");
@@ -37,6 +39,11 @@ export function AuthCallback() {
 
   if (error) {
     return <Navigate to={`/?error=${encodeURIComponent(error)}`} replace />;
+  }
+
+  if (done) {
+    const returnTo = searchParams.get("return_to") ?? "/folders";
+    return <Navigate to={returnTo} replace />;
   }
 
   return (
