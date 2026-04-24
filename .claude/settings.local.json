@@ -5,7 +5,12 @@
       "Bash(gh repo *)",
       "Bash(rtk gh *)",
       "Bash(gh issue *)",
-      "Bash(gh label *)"
+      "Bash(gh label *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk read *)",
+      "Bash(npm install *)",
+      "Bash(rtk npm *)",
+      "mcp__plugin_context-mode_context-mode__ctx_fetch_and_index"
     ]
   }
 }

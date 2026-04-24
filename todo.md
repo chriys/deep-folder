@@ -44,3 +44,21 @@ The backend is spec'd in PRD_BACKEND.md, don't read it unless necessary.
 
   <!-- Ask one branch at a time. Don't accept vague answers — if I say "a sidebar," make me describe what's in it. End when every screen has a concrete answer for loading, empty,
   error, and success states. -->
+
+## Landing page prompt
+    - Build me a landing page for a DeepFolder which is as SaaS.
+    Hero section with animated gradient,
+    "Start for free", "Start with AI" btns in hero section, both get user to connect with his Gsuite.
+    Top corner left has "Log in" and "Sign up" btns.
+    create sections to explain the most sexy features (max 5).
+    Add a section comparing "Regular Google Drive" and "DeepFolder"
+    Add testimonials, and a CTA. 
+    Add a "Reject" and "Accept" cookies modal
+    Use Framer Motion for all transitions. Make it feel premium.
+    The style should be light, animated and colorful.
+    https://flowline.framer.website/ is a good example of the final landing page.
+    - add a section explaining multi-document reasoning
+    Make the example in the hero bigger
+    Add logos that trust us
+    Expand the sections explaining the features. You can see an example on this landing https://remotebymodula.framer.website/
+    Since we'll support mcp add a section explain integrations
