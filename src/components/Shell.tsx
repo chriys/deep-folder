@@ -3,9 +3,9 @@ import { Outlet, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { disconnect as apiDisconnect } from "../api/auth";
 import { useStore } from "../stores";
-import { fetchFolders, fetchConversations, createConversation } from "../api";
+import { fetchConversations, createConversation } from "../api";
 import { SkeletonFolderList, SkeletonConversationList } from "./Skeletons";
-import type { Conversation, Folder } from "../types";
+import type { Conversation } from "../types";
 
 export function Shell() {
   const sidebarOpen = useStore((s) => s.sidebarOpen);
@@ -15,14 +15,14 @@ export function Shell() {
   const disconnect = useStore((s) => s.disconnect);
   const activeFolderId = useStore((s) => s.activeFolderId);
   const setActiveFolder = useStore((s) => s.setActiveFolder);
-  const setFoldersInStore = useStore((s) => s.setFolders);
+  const storeFetchFolders = useStore((s) => s.fetchFolders);
   const activeConversation = useStore((s) => s.activeConversation);
   const setActiveConversation = useStore((s) => s.setActiveConversation);
   const navigate = useNavigate();
 
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const folders = useStore((s) => s.folders);
+  const foldersLoading = useStore((s) => s.foldersLoading);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [foldersLoading, setFoldersLoading] = useState(true);
   const [convLoading, setConvLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -38,15 +38,13 @@ export function Shell() {
   }, [toggleSidebar]);
 
   useEffect(() => {
-    fetchFolders()
-      .then((data) => {
-        setFolders(data);
-        setFoldersInStore(data);
-        if (data.length > 0 && !activeFolderId) {
-          setActiveFolder(data[0].id);
-        }
-      })
-      .finally(() => setFoldersLoading(false));
+    storeFetchFolders().then(() => {
+      const { folders: loaded, activeFolderId: current, setActiveFolder: setActive } =
+        useStore.getState();
+      if (loaded.length > 0 && !current) {
+        setActive(loaded[0].id);
+      }
+    });
   }, []);
 
   useEffect(() => {

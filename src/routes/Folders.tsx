@@ -71,12 +71,10 @@ function FolderCard({ folder, onDelete }: { folder: Folder; onDelete: () => void
 }
 
 export function Folders() {
-  const { folders, createFolder, removeFolder, foldersLoading } = useStore((s) => ({
-    folders: s.folders,
-    createFolder: s.createFolder,
-    removeFolder: s.removeFolder,
-    foldersLoading: s.foldersLoading,
-  }));
+  const folders = useStore((s) => s.folders);
+  const createFolder = useStore((s) => s.createFolder);
+  const removeFolder = useStore((s) => s.removeFolder);
+  const foldersLoading = useStore((s) => s.foldersLoading);
 
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +120,12 @@ export function Folders() {
     if (folders.length === 1 && (folders[0].ingest_state === "pending" || folders[0].ingest_state === "running")) return false;
     return true;
   })();
+
+  if (folders.length === 0 && foldersLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-gray-500">Loading folders...</div>
+    );
+  }
 
   if (folders.length === 0 && !foldersLoading) {
     return (
@@ -196,15 +200,11 @@ export function Folders() {
         <p>This folder has more than 500 files. Indexing may take a while. Continue?</p>
       </ConfirmModal>
 
-      {folders.length === 0 && foldersLoading ? (
-        <div className="flex items-center justify-center py-12 text-gray-500">Loading folders...</div>
-      ) : (
-        <div className="space-y-3">
-          {folders.map((f) => (
-            <FolderCard key={f.id} folder={f} onDelete={() => handleDelete(f.id)} />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {folders.map((f) => (
+          <FolderCard key={f.id} folder={f} onDelete={() => handleDelete(f.id)} />
+        ))}
+      </div>
     </div>
   );
 }
