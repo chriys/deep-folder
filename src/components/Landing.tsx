@@ -209,10 +209,10 @@ function Navbar() {
         <span className="text-sm font-semibold text-gray-900 tracking-tight">DeepFolder</span>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={startGoogleAuth} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 active:scale-95">
+        <button onClick={() => startGoogleAuth()} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 active:scale-95">
           Log in
         </button>
-        <button onClick={startGoogleAuth} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 active:scale-95">
+        <button onClick={() => startGoogleAuth()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 active:scale-95">
           Sign up
         </button>
       </div>
@@ -382,10 +382,10 @@ function Hero({ authError }: { authError: string | null }) {
 
       {/* CTAs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }} className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-        <button onClick={startGoogleAuth} className="inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-violet-200/60 transition hover:opacity-95 active:scale-95">
+        <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-violet-200/60 transition hover:opacity-95 active:scale-95">
           Start for free
         </button>
-        <button onClick={startGoogleAuth} className="inline-flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:shadow-md active:scale-95">
+        <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:shadow-md active:scale-95">
           <GoogleIcon />
           Start with AI
         </button>
@@ -500,7 +500,7 @@ function FeatureSection({
                 </li>
               ))}
             </ul>
-            <button onClick={startGoogleAuth} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200/50 transition hover:opacity-90 active:scale-95">
+            <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200/50 transition hover:opacity-90 active:scale-95">
               Try it free →
             </button>
           </motion.div>
@@ -770,7 +770,7 @@ function MCPIntegrations() {
               ))}
             </ul>
             <div className="flex items-center gap-3">
-              <button onClick={startGoogleAuth} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/50 transition hover:opacity-90 active:scale-95">
+              <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/50 transition hover:opacity-90 active:scale-95">
                 Get started →
               </button>
               <span className="text-xs text-gray-500">MCP setup takes under 2 minutes</span>
@@ -939,10 +939,10 @@ function CTA() {
               Connect your Google account and ask your first question in under a minute.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <button onClick={startGoogleAuth} className="inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-violet-700 shadow-xl transition hover:scale-[1.02] active:scale-95">
+              <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-violet-700 shadow-xl transition hover:scale-[1.02] active:scale-95">
                 Start for free
               </button>
-              <button onClick={startGoogleAuth} className="inline-flex items-center gap-2.5 rounded-xl border border-white/30 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 active:scale-95">
+              <button onClick={() => startGoogleAuth()} className="inline-flex items-center gap-2.5 rounded-xl border border-white/30 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 active:scale-95">
                 <GoogleIcon />
                 Start with AI
               </button>
