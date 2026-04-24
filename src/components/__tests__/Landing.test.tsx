@@ -20,8 +20,8 @@ describe("Landing", () => {
   it("renders connect google button when unauthenticated", () => {
     useStore.getState().setStatus("unauthenticated");
     render(<RouterProvider router={createRouter()} />);
-    expect(screen.getByTestId("connect-google")).toBeInTheDocument();
-    expect(screen.getByText("Connect Google")).toBeInTheDocument();
+    expect(screen.getByText("Sign up")).toBeInTheDocument();
+    expect(screen.getByText("Log in")).toBeInTheDocument();
   });
 
   it("shows error message from query param", () => {
@@ -40,7 +40,8 @@ describe("Landing", () => {
   it("shows connected message when authenticated", () => {
     useStore.getState().setStatus("authenticated");
     render(<RouterProvider router={createRouter()} />);
-    expect(screen.getAllByText("Connected")[0]).toBeInTheDocument();
-    expect(screen.queryByTestId("connect-google")).not.toBeInTheDocument();
+    // Component returns null when authenticated (redirects to /folders)
+    expect(screen.queryByText("Sign up")).not.toBeInTheDocument();
+    expect(screen.queryByText("Log in")).not.toBeInTheDocument();
   });
 });
