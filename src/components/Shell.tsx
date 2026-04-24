@@ -39,10 +39,9 @@ export function Shell() {
 
   useEffect(() => {
     storeFetchFolders().then(() => {
-      const { folders: loaded, activeFolderId: current, setActiveFolder: setActive } =
-        useStore.getState();
-      if (loaded.length > 0 && !current) {
-        setActive(loaded[0].id);
+      const { folders, activeFolderId } = useStore.getState();
+      if (folders.length > 0 && !activeFolderId) {
+        setActiveFolder(folders[0].id);
       }
     });
   }, []);
