@@ -35,7 +35,7 @@ describe("AuthCallback", () => {
     const router = createMemoryRouter(
       [
         { path: "/auth/callback", element: <AuthCallback /> },
-        { path: "/", element: <div data-testid="landing">Landing</div> },
+        { path: "/login", element: <div data-testid="landing">Landing</div> },
       ],
       { initialEntries: ["/auth/callback"] },
     );
@@ -57,7 +57,7 @@ describe("AuthCallback", () => {
       [
         { path: "/auth/callback", element: <AuthCallback /> },
         {
-          path: "/",
+          path: "/login",
           element: <div data-testid="landing-with-error">Landing With Error</div>,
         },
       ],
@@ -80,7 +80,7 @@ describe("AuthCallback", () => {
     const router = createMemoryRouter(
       [
         { path: "/auth/callback", element: <AuthCallback /> },
-        { path: "/", element: <div data-testid="landing">Landing</div> },
+        { path: "/login", element: <div data-testid="landing">Landing</div> },
       ],
       { initialEntries: ["/auth/callback?code=abc"] },
     );

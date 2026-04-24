@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { AuthGate } from "./components/AuthGate";
 import { Shell } from "./components/Shell";
 import { Landing } from "./components/Landing";
@@ -11,7 +11,8 @@ import { useStore } from "./stores";
 import { apiUrl } from "./api/client";
 
 const router = createBrowserRouter([
-  { path: "/", element: <Landing /> },
+  { path: "/", element: <Navigate to="/folders" replace /> },
+  { path: "/login", element: <Landing /> },
   { path: "/auth/callback", element: <AuthCallback /> },
   {
     element: <AuthGate />,

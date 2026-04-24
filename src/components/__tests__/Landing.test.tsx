@@ -6,9 +6,9 @@ import { useStore } from "../../stores";
 
 const initialState = useStore.getState();
 
-function createRouter(initialRoute = "/") {
+function createRouter(initialRoute = "/login") {
   return createMemoryRouter(
-    [{ path: "/", element: <Landing /> }],
+    [{ path: "/login", element: <Landing /> }],
     { initialEntries: [initialRoute] },
   );
 }
@@ -28,7 +28,7 @@ describe("Landing", () => {
     useStore.getState().setStatus("unauthenticated");
     render(
       <RouterProvider
-        router={createRouter("/?error=Access+denied.+Not+allowlisted.")}
+        router={createRouter("/login?error=Access+denied.+Not+allowlisted.")}
       />,
     );
     expect(screen.getByTestId("auth-error")).toBeInTheDocument();

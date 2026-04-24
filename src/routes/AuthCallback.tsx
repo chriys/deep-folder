@@ -38,7 +38,7 @@ export function AuthCallback() {
   }, [searchParams, setStatus, setEmail]);
 
   if (error) {
-    return <Navigate to={`/?error=${encodeURIComponent(error)}`} replace />;
+    return <Navigate to={`/login?error=${encodeURIComponent(error)}`} replace />;
   }
 
   if (done) {

@@ -10,7 +10,7 @@ function createRouter(initialRoute = "/folders") {
   return createMemoryRouter(
     [
       {
-        path: "/",
+        path: "/login",
         element: <div data-testid="landing">Landing</div>,
       },
       {

@@ -13,7 +13,7 @@ export function AuthGate() {
   }
 
   if (status === "unauthenticated") {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
