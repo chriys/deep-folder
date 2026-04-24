@@ -10,8 +10,26 @@ import { Chat } from "./routes/Chat";
 import { useStore } from "./stores";
 import { apiUrl } from "./api/client";
 
+export function RootRedirect() {
+  const status = useStore((s) => s.status);
+
+  if (status === "loading") {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div data-testid="loading-spinner" className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+      </div>
+    );
+  }
+
+  if (status === "authenticated") {
+    return <Navigate to="/folders" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+}
+
 const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/folders" replace /> },
+  { path: "/", element: <RootRedirect /> },
   { path: "/login", element: <Landing /> },
   { path: "/auth/callback", element: <AuthCallback /> },
   {

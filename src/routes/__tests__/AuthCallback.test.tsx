@@ -19,7 +19,7 @@ describe("AuthCallback", () => {
     const router = createMemoryRouter(
       [
         { path: "/auth/callback", element: <AuthCallback /> },
-        { path: "/folders", element: <div data-testid="folders">Folders</div> },
+        { path: "/", element: <div data-testid="root">Root</div> },
       ],
       { initialEntries: ["/auth/callback?code=abc"] },
     );
@@ -88,6 +88,48 @@ describe("AuthCallback", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("landing")).toBeInTheDocument();
+    });
+  });
+
+  it("redirects to / by default after successful auth", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true, email: "tester@example.com" }),
+    } as unknown as Response);
+
+    const router = createMemoryRouter(
+      [
+        { path: "/auth/callback", element: <AuthCallback /> },
+        { path: "/", element: <div data-testid="root">Root</div> },
+      ],
+      { initialEntries: ["/auth/callback?code=abc"] },
+    );
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("root")).toBeInTheDocument();
+    });
+  });
+
+  it("honours return_to param after successful auth", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true, email: "tester@example.com" }),
+    } as unknown as Response);
+
+    const router = createMemoryRouter(
+      [
+        { path: "/auth/callback", element: <AuthCallback /> },
+        { path: "/folders", element: <div data-testid="folders">Folders</div> },
+      ],
+      { initialEntries: ["/auth/callback?code=abc&return_to=%2Ffolders"] },
+    );
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("folders")).toBeInTheDocument();
     });
   });
 });

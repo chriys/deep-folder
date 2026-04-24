@@ -42,7 +42,7 @@ export function AuthCallback() {
   }
 
   if (done) {
-    const returnTo = searchParams.get("return_to") ?? "/folders";
+    const returnTo = searchParams.get("return_to") ?? "/";
     return <Navigate to={returnTo} replace />;
   }
 
