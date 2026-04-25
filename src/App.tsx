@@ -53,14 +53,14 @@ function AppInner() {
 
   useEffect(() => {
     fetch(apiUrl("/auth/status"), { credentials: "include" })
-      .then((res) => res.json())
-      .then((data: { connected: boolean; email: string | null }) => {
-        if (data.connected) {
-          setEmail(data.email);
-          setStatus("authenticated");
-        } else {
+      .then(async (res) => {
+        if (!res.ok) {
           setStatus("unauthenticated");
+          return;
         }
+        const data: { email: string; drive_connected: boolean } = await res.json();
+        setEmail(data.email);
+        setStatus("authenticated");
       })
       .catch(() => {
         setStatus("unauthenticated");
