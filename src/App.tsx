@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { AuthGate } from "./components/AuthGate";
 import { Shell } from "./components/Shell";
 import { Landing } from "./components/Landing";
+import { RouteError } from "./components/RouteError";
 import { AuthCallback } from "./routes/AuthCallback";
 import { Folders } from "./routes/Folders";
 import { FolderDetail } from "./routes/FolderDetail";
@@ -29,18 +30,23 @@ export function RootRedirect() {
 }
 
 const router = createBrowserRouter([
-  { path: "/", element: <RootRedirect /> },
-  { path: "/login", element: <Landing /> },
-  { path: "/auth/callback", element: <AuthCallback /> },
   {
-    element: <AuthGate />,
+    errorElement: <RouteError />,
     children: [
+      { path: "/", element: <RootRedirect /> },
+      { path: "/login", element: <Landing /> },
+      { path: "/auth/callback", element: <AuthCallback /> },
       {
-        element: <Shell />,
+        element: <AuthGate />,
         children: [
-          { path: "/folders", element: <Folders /> },
-          { path: "/folders/:id", element: <FolderDetail /> },
-          { path: "/chat/:convId", element: <Chat /> },
+          {
+            element: <Shell />,
+            children: [
+              { path: "/folders", element: <Folders /> },
+              { path: "/folders/:id", element: <FolderDetail /> },
+              { path: "/chat/:convId", element: <Chat /> },
+            ],
+          },
         ],
       },
     ],

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "../stores";
@@ -39,9 +39,11 @@ export function FolderDetail() {
 
   useIngestPolling(id ?? null);
 
-  if (id && !folder) {
-    loadFolder(id);
-  }
+  useEffect(() => {
+    if (id && !folder) {
+      loadFolder(id);
+    }
+  }, [id, folder, loadFolder]);
 
   const f = folder;
 
